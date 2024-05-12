@@ -18,7 +18,7 @@ func (app *application) routes() http.Handler {
 	r.Handle("/static/*", staticFileHandlerRoute())
 	// Set a custom 405 handler
 	r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		app.clientError(w, http.StatusMethodNotAllowed)
 	})
 	return r
 }
