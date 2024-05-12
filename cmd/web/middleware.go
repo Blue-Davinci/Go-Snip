@@ -20,6 +20,18 @@ func secureHeaders(next http.Handler) http.Handler {
 	})
 }
 
+/*/ 	 Use the chi.RouteContext to check if a route was found
+func MethodNotAllowedHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		rctx := chi.RouteContext(r.Context())
+		if !rctx.RoutesMatched {
+			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}*/
 // logRequest() middleware logs each request and corresponding details
 func (app *application) logRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -16,6 +16,10 @@ func (app *application) routes() http.Handler {
 	r.Mount("/snippet", app.snippetRoutes())
 	// Static file handler to the router
 	r.Handle("/static/*", staticFileHandlerRoute())
+	// Set a custom 405 handler
+	r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+	})
 	return r
 }
 func (app *application) snippetRoutes() chi.Router {
