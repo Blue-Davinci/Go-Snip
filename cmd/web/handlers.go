@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/blue-davinci/gosnip/internal/models"
 	"github.com/go-chi/chi/v5"
@@ -54,11 +56,38 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
+
+	// Create a map to hold all possible errors:
+	fieldErrors := make(map[string]string)
+	// Check title is not empty or more than 100 characters
+	if strings.TrimSpace(title) == "" {
+		fieldErrors["title"] = "This field cannot be empty"
+	} else if utf8.RuneCountInString(title) > 100 {
+		fieldErrors["title"] = "This field cannot be more than 100 characters long"
+	}
+	// Check that the content value is not empty
+	if strings.TrimSpace(content) == "" {
+		fieldErrors["content"] = "This field cannot be blank"
+	}
+	// Check the ecpires value matches one of the permitted values i.e.
+	// a day, week, month or year
+	if expires != 1 && expires != 7 && expires != 365 {
+		fieldErrors["expires"] = "This field must equal a day, week or year"
+	}
+	// If there are any errors, dump them in a plain text HTTP response and
+	// return from the handler.
+	if len(fieldErrors) > 0 {
+		fmt.Fprint(w, fieldErrors)
+		return
+	}
+
+	// validation complete, pass it to the DB
 	id, err := app.snippets.Insert(title, content, expires)
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
+	// Redirect to the view showing the new snippet.
 	http.Redirect(w, r, fmt.Sprintf("/snippet/view/%d", id), http.StatusSeeOther)
 }
 
