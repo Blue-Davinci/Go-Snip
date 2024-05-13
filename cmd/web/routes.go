@@ -16,23 +16,35 @@ func (app *application) routes() http.Handler {
 	r.Mount("/snippet", app.snippetRoutes())
 	// Static file handler to the router
 	r.Handle("/static/*", staticFileHandlerRoute())
-	// Set a custom 405 handler
-	r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
-		app.clientError(w, http.StatusMethodNotAllowed)
-	})
+	// Http error Handlers
+	app.setCustomHttpErrorHandlers(r)
+
 	return r
 }
 func (app *application) snippetRoutes() chi.Router {
 	r := chi.NewRouter()
-	r.Post("/create", app.snippetCreate)
-	r.Get("/view", app.snippetView)
+	r.Get("/view/{id}", app.snippetView)
+	// create
+	r.Post("/create", app.snippetCreatePost)
+	r.Get("/create", app.snippetCreate)
 	return r
+}
+
+func (app *application) setCustomHttpErrorHandlers(r *chi.Mux) {
+	// Set a custom 404 handler
+	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		app.notFound(w)
+	})
+	// Set a custom 405 handler
+	r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
+		app.clientError(w, http.StatusMethodNotAllowed)
+	})
 }
 func staticFileHandlerRoute() http.Handler {
 	// Create a file server which serves files out of the "./ui/static" directory.
 	// Note that the path given to the http.Dir function is relative to the project
 	// directory root.
-	fileServer := http.StripPrefix("/static", http.FileServer(http.Dir("./ui/static/")))
+	fileServer := http.StripPrefix("/static/*filepath", http.FileServer(http.Dir("./ui/static/")))
 	return fileServer
 }
 
