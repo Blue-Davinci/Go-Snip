@@ -14,7 +14,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alexedwards/scs/mysqlstore"
+	"github.com/alexedwards/scs/v2"
 	"github.com/blue-davinci/gosnip/internal/models"
+	"github.com/go-playground/form/v4"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 )
@@ -32,10 +35,12 @@ type logger struct {
 }
 
 type application struct {
-	config        config
-	logger        *logger
-	snippets      *models.SnippetModel
-	templateCache map[string]*template.Template
+	config         config
+	logger         *logger
+	snippets       *models.SnippetModel
+	templateCache  map[string]*template.Template
+	formDecoder    *form.Decoder
+	sessionManager *scs.SessionManager
 }
 
 func main() {
@@ -73,11 +78,23 @@ func main() {
 		logger.log.Error(err.Error())
 		os.Exit(0)
 	}
+	// Initialize a decoder instance...
+	formDecoder := form.NewDecoder()
+	// Use the scs.New() function to initialize a new session manager. Then we
+	// configure it to use our MySQL database as the session store, and set an
+	// expiry after 12 hours
+	sessionManager := scs.New()
+	sessionManager.Store = mysqlstore.New(db)
+	sessionManager.Lifetime = 12 * time.Hour
+
+	// Initialize our app with all the dependancies
 	app := &application{
-		config:        cfg,
-		logger:        &logger,
-		snippets:      &models.SnippetModel{DB: db},
-		templateCache: templateCache,
+		config:         cfg,
+		logger:         &logger,
+		snippets:       &models.SnippetModel{DB: db},
+		templateCache:  templateCache,
+		formDecoder:    formDecoder,
+		sessionManager: sessionManager,
 	}
 
 	app.logger.log.Info(fmt.Sprintf("Server is running on port: %d || Environment: %s", app.config.port, app.config.env))

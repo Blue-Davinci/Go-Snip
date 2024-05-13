@@ -4,16 +4,20 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/justinas/alice"
 )
 
 func (app *application) routes() http.Handler {
 	r := chi.NewRouter()
+	// Create the middleware chain
+	globalMiddleware := alice.New(app.recoverPanic, app.logRequest, secureHeaders).Then
+	dynamicMiddleware := alice.New(app.sessionManager.LoadAndSave).Then
 	// Middleware----
-	app.loadMiddleware(r)
+	r.Use(globalMiddleware)
 	// Home\root path ---
-	r.Get("/", app.home)
+	r.With(dynamicMiddleware).Get("/", app.home)
 	// Snippet routes
-	r.Mount("/snippet", app.snippetRoutes())
+	r.With(dynamicMiddleware).Mount("/snippet", app.snippetRoutes())
 	// Static file handler to the router
 	r.Handle("/static/*", staticFileHandlerRoute())
 	// Http error Handlers
@@ -46,13 +50,4 @@ func staticFileHandlerRoute() http.Handler {
 	// directory root.
 	fileServer := http.StripPrefix("/static/*filepath", http.FileServer(http.Dir("./ui/static/")))
 	return fileServer
-}
-
-func (app *application) loadMiddleware(r *chi.Mux) {
-	// Add panic recovery middleware
-	r.Use(app.recoverPanic)
-	// Add the logger middleware
-	r.Use(app.logRequest)
-	// Add the secureHeaders middleware
-	r.Use(secureHeaders)
 }
