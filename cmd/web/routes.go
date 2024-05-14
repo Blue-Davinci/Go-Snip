@@ -48,6 +48,6 @@ func staticFileHandlerRoute() http.Handler {
 	// Create a file server which serves files out of the "./ui/static" directory.
 	// Note that the path given to the http.Dir function is relative to the project
 	// directory root.
-	fileServer := http.StripPrefix("/static/*filepath", http.FileServer(http.Dir("./ui/static/")))
+	fileServer := http.StripPrefix("/static/", http.FileServer(http.Dir("./ui/static/")))
 	return fileServer
 }

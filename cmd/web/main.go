@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"database/sql"
 	"errors"
 	"flag"
@@ -86,6 +87,8 @@ func main() {
 	sessionManager := scs.New()
 	sessionManager.Store = mysqlstore.New(db)
 	sessionManager.Lifetime = 12 * time.Hour
+	// Make sure that the Secure attribute is set on our session cookies.
+	sessionManager.Cookie.Secure = true
 
 	// Initialize our app with all the dependancies
 	app := &application{
@@ -96,17 +99,23 @@ func main() {
 		formDecoder:    formDecoder,
 		sessionManager: sessionManager,
 	}
+	// Initialize a tls.Config struct to hold the non-default TLS settings for the server
+	// Changing the preferences for elliptic curves with assembly implementations to be used.
 
+	tlsConfig := &tls.Config{
+		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
+	}
 	app.logger.log.Info(fmt.Sprintf("Server is running on port: %d || Environment: %s", app.config.port, app.config.env))
 	s := &http.Server{
 		Addr:         fmt.Sprintf(":%d", app.config.port),
 		IdleTimeout:  time.Minute,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 30 * time.Second,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
 		Handler:      app.routes(),
 		ErrorLog:     log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile),
+		TLSConfig:    tlsConfig,
 	}
-	err = s.ListenAndServe()
+	err = s.ListenAndServeTLS("./tls/cert.pem", "./tls/key.pem")
 	if !errors.Is(err, http.ErrServerClosed) {
 		app.logger.log.Error(err.Error())
 		return

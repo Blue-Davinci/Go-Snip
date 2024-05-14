@@ -79,15 +79,18 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 		app.serverError(w, err)
 		return
 	}
+	// Use the Put() method to add a string value ("Snippet successfully
+	// created!") and the corresponding key ("flash") to the session data.
+	app.sessionManager.Put(r.Context(), "flash", "Snippet successfully created!")
+
 	// Redirect to the view showing the new snippet.
 	http.Redirect(w, r, fmt.Sprintf("/snippet/view/%d", id), http.StatusSeeOther)
 }
 
-// Add a new snippetCreate handler, which for now returns a placeholder
-// response. We'll update this shortly to show a HTML form.
+// Add a new snippetCreate handler, which Initializes a new createSnippetForm instance
+// And passes it to the template.
 func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
-	// Initialize a new createSnippetForm instance and pass it to the template.
 	// This acts like default parameters and we set the initial value for the
 	// snippet expiry to 365 days.
 	data.Form = snippetCreateForm{
@@ -116,6 +119,8 @@ func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+
+	// Load our data and pass it to our template
 	data := app.newTemplateData(r)
 	data.Snippet = snippet
 
