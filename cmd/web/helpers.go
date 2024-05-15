@@ -9,7 +9,19 @@ import (
 	"time"
 
 	"github.com/go-playground/form/v4"
+	"github.com/justinas/nosurf"
 )
+
+// The isAuthenticated() method Returns true if the current request is from an authenticated user, otherwise
+// returns false.
+func (app *application) isAuthenticated(r *http.Request) bool {
+	isAuthenticated, ok := r.Context().Value(isAuthenticatedContextKey).(bool)
+	if !ok {
+		return false
+	}
+	return isAuthenticated
+
+}
 
 // The serverError() helper writes an error message and stack trace to the errorLog,
 // then sends a generic 500 Internal Server Error response to the user.
@@ -61,18 +73,22 @@ func (app *application) render(w http.ResponseWriter, status int, page string, d
 	buffer.WriteTo(w)
 }
 
-// Create an newTemplateData() helper, which returns a pointer to a templateData
-// struct initialized with the current year.
+// The newTemplateData() helper, returns a pointer to a templateData
+// struct initialized with the current year, flash message and
+// authentication data.
 func (app *application) newTemplateData(r *http.Request) *templateData {
 	//app.logger.log.Debug(r.RemoteAddr)
 	// Use the PopString() method to retrieve the value for the "flash" key.
 	// PopString() also deletes the key and value from the session data, so it
 	// acts like a one-time fetch. If there is no matching key in the session
 	// data this will return the empty string.
-	// Current year gets our time, to render it our footer template value	.
+	// Current year gets our time, to render it our footer template value.
+	// IsAuthenticated to check if the user is authenticated .
 	return &templateData{
-		CurrentYear: time.Now().Year(),
-		Flash:       app.sessionManager.PopString(r.Context(), "flash"),
+		CurrentYear:     time.Now().Year(),
+		Flash:           app.sessionManager.PopString(r.Context(), "flash"),
+		IsAuthenticated: app.isAuthenticated(r),
+		CSRFToken:       nosurf.Token(r),
 	}
 }
 
