@@ -27,7 +27,7 @@ func (app *application) isAuthenticated(r *http.Request) bool {
 // then sends a generic 500 Internal Server Error response to the user.
 func (app *application) serverError(w http.ResponseWriter, err error) {
 	trace := fmt.Sprintf("%s\n%s", err.Error(), debug.Stack())
-	app.logger.log.Error(trace)
+	app.logger.PrintError(err, map[string]string{"trace": trace})
 	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 }
 

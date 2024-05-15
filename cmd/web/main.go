@@ -17,6 +17,7 @@ import (
 
 	"github.com/alexedwards/scs/mysqlstore"
 	"github.com/alexedwards/scs/v2"
+	"github.com/blue-davinci/gosnip/internal/jsonlog"
 	"github.com/blue-davinci/gosnip/internal/models"
 	"github.com/go-playground/form/v4"
 	_ "github.com/go-sql-driver/mysql"
@@ -37,7 +38,7 @@ type logger struct {
 
 type application struct {
 	config         config
-	logger         *logger
+	logger         *jsonlog.Logger
 	snippets       *models.SnippetModel
 	users          *models.UserModel
 	templateCache  map[string]*template.Template
@@ -47,17 +48,15 @@ type application struct {
 
 func main() {
 	var cfg config
-
-	options := slog.HandlerOptions{Level: slog.LevelDebug}
-	handler := slog.NewJSONHandler(os.Stdout, &options)
-	mylogger := slog.New(handler)
-	logger := logger{log: *mylogger}
-	currentpath := getEnvPath(logger.log)
-	logger.log.Info("Searching env at: ", slog.String("ENV:", currentpath))
+	// Initialize a new logger which writes messages to the standard out stream,
+	// prefixed with the current date and time.
+	logger := jsonlog.New(os.Stdout, jsonlog.LevelInfo)
+	currentpath := getEnvPath(logger)
+	logger.PrintInfo("Searching env at: ", map[string]string{"ENV:": currentpath})
 	if currentpath != "" {
 		err := godotenv.Load(currentpath)
 		if err != nil {
-			logger.log.Error(err.Error())
+			logger.PrintError(err, nil)
 		}
 	} else {
 		return
@@ -69,7 +68,7 @@ func main() {
 	//------------------------------------------- Database
 	db, err := openDB(cfg)
 	if err != nil {
-		logger.log.Error(err.Error())
+		logger.PrintError(err, nil)
 		os.Exit(0)
 	}
 	defer db.Close()
@@ -77,7 +76,7 @@ func main() {
 	// Initialize new template cache
 	templateCache, err := newTemplateCache()
 	if err != nil {
-		logger.log.Error(err.Error())
+		logger.PrintError(err, nil)
 		os.Exit(0)
 	}
 	// Initialize a decoder instance...
@@ -94,7 +93,7 @@ func main() {
 	// Initialize our app with all the dependancies
 	app := &application{
 		config:         cfg,
-		logger:         &logger,
+		logger:         logger,
 		snippets:       &models.SnippetModel{DB: db},
 		users:          &models.UserModel{DB: db},
 		templateCache:  templateCache,
@@ -107,19 +106,23 @@ func main() {
 	tlsConfig := &tls.Config{
 		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
 	}
-	app.logger.log.Info(fmt.Sprintf("Server is running on port: %d || Environment: %s", app.config.port, app.config.env))
+	app.logger.PrintInfo("Server is running",
+		map[string]string{
+			"port":        fmt.Sprintf(":%d", app.config.port),
+			"Environment": app.config.env,
+		})
 	s := &http.Server{
 		Addr:         fmt.Sprintf(":%d", app.config.port),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		Handler:      app.routes(),
-		ErrorLog:     log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile),
+		ErrorLog:     log.New(app.logger, "", 0),
 		TLSConfig:    tlsConfig,
 	}
 	err = s.ListenAndServeTLS("./tls/cert.pem", "./tls/key.pem")
 	if !errors.Is(err, http.ErrServerClosed) {
-		app.logger.log.Error(err.Error())
+		app.logger.PrintError(err, nil)
 		return
 	}
 }
@@ -138,10 +141,10 @@ func openDB(cfg config) (*sql.DB, error) {
 }
 
 // getEnvPath() method returns the path to the .env file based on the current working directory.
-func getEnvPath(l slog.Logger) string {
+func getEnvPath(l *jsonlog.Logger) string {
 	dir, err := os.Getwd()
 	if err != nil {
-		l.Error(err.Error())
+		l.PrintError(err, nil)
 		return ""
 	}
 	if strings.Contains(dir, "cmd/web") || strings.Contains(dir, "cmd") {
