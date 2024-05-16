@@ -93,8 +93,8 @@ view the Migrations and execute them like so:
     ```
   An alternative is using the MAKEFILE, to just build immediately:
   ```bash
-make build/api
-```
+    make build/api
+  ```
 
 
 6. **Run the project**: You can run the project using the `go run` after navigating to `cmd\web\` directory:
@@ -124,10 +124,9 @@ This project uses Go's built-in testing package. To run the tests, follow these 
   This command will recursively run all tests in the project.
 
   To run tests for the `handlers` package, you would use:
-
-    ```bash
+```bash
     go test ./cmd/web
-    ```
+ ```
 
 ### Break down into end to end tests <a name = "test_break"></a>
 
