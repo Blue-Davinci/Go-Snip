@@ -92,9 +92,7 @@ view the Migrations and execute them like so:
     go build
     ```
   An alternative is using the MAKEFILE, to just build immediately:
-  ```bash
-  make build/api
-  ```
+
 
 6. **Run the project**: You can run the project using the `go run` after navigating to `cmd\web\` directory:
 
