@@ -92,7 +92,7 @@ view the Migrations and execute them like so:
     go build
     ```
   An alternative is using the MAKEFILE, to just build immediately:
-  ````bash
+  ```bash
   make build/api
   ```
 
