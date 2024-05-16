@@ -28,7 +28,11 @@ func (app *application) isAuthenticated(r *http.Request) bool {
 func (app *application) serverError(w http.ResponseWriter, err error) {
 	trace := fmt.Sprintf("%s\n%s", err.Error(), debug.Stack())
 	app.logger.PrintError(err, map[string]string{"trace": trace})
-	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	if !app.config.debug {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	} else {
+		http.Error(w, trace, http.StatusInternalServerError)
+	}
 }
 
 // The clientError() helper sends a specific status code and corresponding description

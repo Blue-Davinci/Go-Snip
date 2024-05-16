@@ -16,15 +16,17 @@ func (app *application) routes() http.Handler {
 	dynamicMiddleware := alice.New(app.sessionManager.LoadAndSave, noSurf, app.authenticate).Then
 	// Add Global Middleware----
 	r.Use(globalMiddleware)
+	// Home\root path ---
+	r.With(dynamicMiddleware).Get("/", app.home)
 	// Auxilary routes
 	r.Get("/ping", app.ping)
 	r.With(dynamicMiddleware).Get("/about", app.about)
-	// Home\root path ---
-	r.With(dynamicMiddleware).Get("/", app.home)
 	// Snippet routes
 	r.With(dynamicMiddleware).Mount("/snippet", app.snippetRoutes())
 	// User routes
 	r.With(dynamicMiddleware).Mount("/user", app.userRoutes())
+	// Account routes
+	r.With(dynamicMiddleware).Mount("/account", app.userAccountRoutes())
 	// Static file handler to the serve fs static files
 	r.Handle("/static/*", staticFileHandlerRoute())
 	// Http error Handlers
@@ -38,7 +40,7 @@ func (app *application) routes() http.Handler {
 func (app *application) snippetRoutes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/view/{id}", app.snippetView)
-	// create
+	// protected
 	r.With(app.requireAuthentication).Post("/create", app.snippetCreatePost)
 	r.With(app.requireAuthentication).Get("/create", app.snippetCreate)
 	return r
@@ -52,8 +54,14 @@ func (app *application) userRoutes() chi.Router {
 	r.Post("/signup", app.userSignupPost)
 	r.Get("/login", app.userLogin)
 	r.Post("/login", app.userLoginPost)
-	//
+	// protected
 	r.With(app.requireAuthentication).Post("/logout", app.userLogoutPost)
+	return r
+}
+func (app *application) userAccountRoutes() chi.Router {
+	r := chi.NewRouter()
+	// protected
+	r.With(app.requireAuthentication).Get("/view", app.accountView)
 	return r
 }
 

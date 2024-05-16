@@ -29,6 +29,7 @@ type config struct {
 	db   struct {
 		dsn string
 	}
+	debug bool
 }
 
 type application struct {
@@ -59,7 +60,11 @@ func main() {
 	flag.IntVar(&cfg.port, "port", 4000, "API server port")
 	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
 	flag.StringVar(&cfg.db.dsn, "dsn", os.Getenv("GOSNIP_DB_DSN"), "MySQL DB DSN")
+	debug := flag.Bool("debug", false, "Enable debug mode")
 	flag.Parse()
+	// show debug
+	cfg.debug = *debug
+	logger.PrintInfo(fmt.Sprintf("Debug mode: %v", cfg.debug), nil)
 	//------------------------------------------- Database
 	db, err := openDB(cfg)
 	if err != nil {

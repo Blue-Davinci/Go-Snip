@@ -38,11 +38,8 @@ type snippetCreateForm struct {
 }
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
-	// Use the template.ParseFiles() function to read the templates into a
-	// template set. If there's an error, we log the detailed error message and use
-	// the http.Error() function to send a generic 500 Internal Server Error
-	// response to the user.
 	snippets, err := app.snippets.Latest()
+	//
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -272,7 +269,22 @@ func (app *application) userLogoutPost(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 
 }
+func (app *application) accountView(w http.ResponseWriter, r *http.Request) {
+	userID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
+	user, err := app.users.Get(userID)
+	if err != nil {
+		if errors.Is(err, models.ErrNoRecord) {
+			http.Redirect(w, r, "/user/login", http.StatusSeeOther)
+		} else {
+			app.serverError(w, err)
+		}
+		return
+	}
+	data := app.newTemplateData(r)
+	data.User = user
+	app.render(w, http.StatusOK, "account.tmpl", data)
 
+}
 func (app *application) about(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 	app.render(w, http.StatusOK, "about.tmpl", data)

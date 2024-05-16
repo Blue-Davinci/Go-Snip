@@ -16,6 +16,7 @@ type UserModelInterface interface {
 	Insert(name, email, password string) error
 	Authenticate(email, password string) (int, error)
 	Exists(id int) (bool, error)
+	Get(id int) (*User, error)
 }
 
 // Define a new User type. Fileds match on the DB
@@ -100,4 +101,17 @@ func (m *UserModel) Exists(id int) (bool, error) {
 	stmt := "SELECT EXISTS(SELECT true FROM users WHERE id = ?)"
 	err := m.DB.QueryRow(stmt, id).Scan(&exists)
 	return exists, err
+}
+func (m *UserModel) Get(id int) (*User, error) {
+	var user User
+	stmt := `SELECT id, name, email, created FROM users WHERE id = ?`
+	err := m.DB.QueryRow(stmt, id).Scan(&user.ID, &user.Name, &user.Email, &user.Created)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNoRecord
+		} else {
+			return nil, err
+		}
+	}
+	return &user, nil
 }

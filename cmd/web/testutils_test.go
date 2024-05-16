@@ -55,7 +55,7 @@ type testServer struct {
 // Create a newTestServer helper which initalizes and returns a new instance
 // of our custom testServer type.
 func newTestServer(t *testing.T, h http.Handler) *testServer {
-	t.Log("Starting new test server...")
+	t.Error("Starting new test server...")
 	ts := httptest.NewTLSServer(h)
 	return &testServer{ts}
 }
