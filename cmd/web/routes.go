@@ -16,6 +16,8 @@ func (app *application) routes() http.Handler {
 	dynamicMiddleware := alice.New(app.sessionManager.LoadAndSave, noSurf, app.authenticate).Then
 	// Add Global Middleware----
 	r.Use(globalMiddleware)
+	// Auxilary routes
+	r.Get("/ping", ping)
 	// Home\root path ---
 	r.With(dynamicMiddleware).Get("/", app.home)
 	// Snippet routes

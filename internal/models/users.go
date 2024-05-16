@@ -10,6 +10,14 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// UserModelInterface is an interface that defines the methods that the UserModel
+// must implement. We're going to use it better for testing as well.
+type UserModelInterface interface {
+	Insert(name, email, password string) error
+	Authenticate(email, password string) (int, error)
+	Exists(id int) (bool, error)
+}
+
 // Define a new User type. Fileds match on the DB
 type User struct {
 	ID             int
