@@ -17,7 +17,8 @@ func (app *application) routes() http.Handler {
 	// Add Global Middleware----
 	r.Use(globalMiddleware)
 	// Auxilary routes
-	r.Get("/ping", ping)
+	r.Get("/ping", app.ping)
+	r.With(dynamicMiddleware).Get("/about", app.about)
 	// Home\root path ---
 	r.With(dynamicMiddleware).Get("/", app.home)
 	// Snippet routes
