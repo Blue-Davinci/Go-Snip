@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"html"
 	"io"
 	"net/http"
@@ -55,7 +56,7 @@ type testServer struct {
 // Create a newTestServer helper which initalizes and returns a new instance
 // of our custom testServer type.
 func newTestServer(t *testing.T, h http.Handler) *testServer {
-	t.Error("Starting new test server...")
+	fmt.Println("Running: ", t.Name())
 	ts := httptest.NewTLSServer(h)
 	return &testServer{ts}
 }
