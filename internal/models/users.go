@@ -17,6 +17,7 @@ type UserModelInterface interface {
 	Authenticate(email, password string) (int, error)
 	Exists(id int) (bool, error)
 	Get(id int) (*User, error)
+	PasswordUpdate(id int, currentPassword, newPassword string) error
 }
 
 // Define a new User type. Fileds match on the DB
@@ -96,12 +97,17 @@ func (m *UserModel) Authenticate(email, password string) (int, error) {
 }
 
 // The Exists() method checks if a user exists with a specific ID.
+// And returns a boolean value indicating whether the user exists or not
+// and an error if there was a problem.
 func (m *UserModel) Exists(id int) (bool, error) {
 	var exists bool
 	stmt := "SELECT EXISTS(SELECT true FROM users WHERE id = ?)"
 	err := m.DB.QueryRow(stmt, id).Scan(&exists)
 	return exists, err
 }
+
+// The Get() method fetches a specific user record based on the user ID.
+// If the user does not exist, we return an ErrNoRecord error.
 func (m *UserModel) Get(id int) (*User, error) {
 	var user User
 	stmt := `SELECT id, name, email, created FROM users WHERE id = ?`
@@ -114,4 +120,31 @@ func (m *UserModel) Get(id int) (*User, error) {
 		}
 	}
 	return &user, nil
+}
+
+// The PasswordUpdate() method updates the user's password.
+// It takes the user ID, the current password, and the new password as arguments.
+// It returns an error if there was a problem.
+func (m *UserModel) PasswordUpdate(id int, currentPassword, newPassword string) error {
+	var currentHashedPassword []byte
+	stmt := "SELECT hashed_password FROM users WHERE id = ?"
+	err := m.DB.QueryRow(stmt, id).Scan(&currentHashedPassword)
+	if err != nil {
+		return err
+	}
+	err = bcrypt.CompareHashAndPassword(currentHashedPassword, []byte(currentPassword))
+	if err != nil {
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			return ErrInvalidCredentials
+		} else {
+			return err
+		}
+	}
+	newHashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), 12)
+	if err != nil {
+		return err
+	}
+	stmt = "UPDATE users SET hashed_password = ? WHERE id = ?"
+	_, err = m.DB.Exec(stmt, string(newHashedPassword), id)
+	return err
 }

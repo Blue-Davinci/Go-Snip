@@ -62,6 +62,8 @@ func (app *application) userAccountRoutes() chi.Router {
 	r := chi.NewRouter()
 	// protected
 	r.With(app.requireAuthentication).Get("/view", app.accountView)
+	r.With(app.requireAuthentication).Get("/password/update", app.accountPasswordUpdate)
+	r.With(app.requireAuthentication).Post("/password/update", app.accountPasswordUpdatePost)
 	return r
 }
 
